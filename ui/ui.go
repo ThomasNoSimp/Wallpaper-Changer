@@ -353,3 +353,4 @@ func loadImageFromFileWithSize(path string, width, height int) (fyne.CanvasObjec
 }
 
 //
+//
