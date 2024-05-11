@@ -1,11 +1,7 @@
-/*
-   ---> Images used in the application are from Unsplash Wallpapers <---
-   ---> Images credit to: Unsplash Wallpapers                       <---
-*/
-
 package ui
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"math/rand"
@@ -34,10 +30,30 @@ var (
 
 // SMTPServer represents the SMTP server details
 type SMTPServer struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// LoadConfig loads SMTP server configuration from a JSON file
+func LoadConfig() (SMTPServer, error) {
+	var config struct {
+		SMTPServer SMTPServer `json:"smtp_server"`
+	}
+
+	configFile, err := os.Open("ui/config.json")
+	if err != nil {
+		return SMTPServer{}, err
+	}
+	defer configFile.Close()
+
+	err = json.NewDecoder(configFile).Decode(&config)
+	if err != nil {
+		return SMTPServer{}, err
+	}
+
+	return config.SMTPServer, nil
 }
 
 // SetupUI sets up the user interface
@@ -180,15 +196,13 @@ func sendEmail(email string) error {
 	// Store the generated code globally
 	verificationCode = strconv.Itoa(code)
 
-	// Replace these with your SMTP server details
-	server := SMTPServer{
-		Host:     "smtp.gmail.com",
-		Port:     "587",
-		Username: "thurawaizin.conceptx@gmail.com",
-		Password: "piav shsr tcou gjgt",
+	// Load SMTP server configuration from config file
+	serverConfig, err := LoadConfig()
+	if err != nil {
+		return err
 	}
 
-	auth := smtp.PlainAuth("", server.Username, server.Password, server.Host)
+	auth := smtp.PlainAuth("", serverConfig.Username, serverConfig.Password, serverConfig.Host)
 
 	to := []string{email}
 	// Concatenate the code with the email message
@@ -197,7 +211,7 @@ func sendEmail(email string) error {
 		"\r\n" +
 		"This is your unique verification code for Wallpaper Changer app. Code: " + verificationCode + "\r\n")
 
-	err := smtp.SendMail(server.Host+":"+server.Port, auth, server.Username, to, msg)
+	err = smtp.SendMail(serverConfig.Host+":"+serverConfig.Port, auth, serverConfig.Username, to, msg)
 	if err != nil {
 		return err
 	}
@@ -225,11 +239,11 @@ func setWallpaperUsingAppleScript(imagePath string) error {
 
 	// Construct the AppleScript command to set the wallpaper
 	script := `
-		set wallpaperImage to "` + fullImagePath + `"
-		tell application "System Events"
-			set picture of every desktop to wallpaperImage
-		end tell
-	`
+        set wallpaperImage to "` + fullImagePath + `"
+        tell application "System Events"
+            set picture of every desktop to wallpaperImage
+        end tell
+    `
 	// Log the constructed AppleScript command
 	log.Println("AppleScript command:", script)
 
@@ -351,6 +365,3 @@ func loadImageFromFileWithSize(path string, width, height int) (fyne.CanvasObjec
 	img.Resize(fyne.NewSize(float32(width), float32(height)))
 	return img, nil
 }
-
-//
-//
