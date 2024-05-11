@@ -351,3 +351,5 @@ func loadImageFromFileWithSize(path string, width, height int) (fyne.CanvasObjec
 	img.Resize(fyne.NewSize(float32(width), float32(height)))
 	return img, nil
 }
+
+//
